@@ -1,0 +1,68 @@
+#!/bin/bash
+echo "Дата: $(date +"%m-%d-%Y");"
+echo "Имя учетной записи: $(whoami);"
+echo "Доменнок имя ПК $(hostname);"
+
+echo "Процессор:"
+echo -e "\tМодель - $(lscpu | grep 'Имя модели:' | sed 's/Имя модели:          //')"
+
+echo -e "\tАрхитектура - $(lscpu | grep 'Архитектура:' | sed "s/Архитектура:         //")"
+
+echo -e "\tТактовая частота  - $(lscpu | grep 'CPU МГц:' | sed 's/CPU МГц:          //')"
+
+echo -e "\tКоличество ядер - $(lscpu | grep 'Ядер на сокет:' | sed "s/Ядер на сокет:       //")"
+
+echo -e "\tКоличество потоков на одно ядро - $(lscpu | grep 'Потоков на ядро:' | sed "s/Потоков на ядро:     //")"
+
+
+echo "Оперативная память:"
+echo -e "\tВсего - $(cat /proc/meminfo | grep 'MemTotal:' | sed 's/MemTotal:        //')"
+echo -e "\tДоступно - $(cat /proc/meminfo | grep "MemAvailable:" | sed "s/MemAvailable:    //")"
+echo "Жесткий диск:"
+echo -e "\tВсего - $(df -h --total -k | grep 'total' | awk '{print($2)}') kB"
+echo -e "\tДоступно - $(df -h --total -k | grep 'total' | awk '{print($4)}') kB"
+echo -e "\tСмонтировано в корневую директорию / - $(df -h | grep -w '/' | awk '{print($1)}')"
+echo -e "\tSWAP всего - $(free -k | grep 'Подкачка' | awk '{print($2)}') kB"
+echo -e "\tSWAP доступно - $(free -k | grep 'Подкачка' | awk '{print($4)}') kB"
+echo
+echo "Сетевые интерфейсы"
+name=$(ls /sys/class/net)
+
+counter=0
+for var in $name
+do
+	counter=$((counter + 1))
+done
+echo -e "\tКоличество сетевых интерфейсов - $counter"
+echo -e "№\t\tИмя сетевого интерфейса\t\tMAC адрес\t\tIP адрес\t\tСкорость соединения"
+counter=1 
+tab="\t"
+for var in $name
+do
+	mac=$(ifconfig $var | grep "ether " | awk '{print($2)}')
+	ip=$(ifconfig $var | grep "inet "| awk '{print($2)}')
+	speed=$(ifconfig $var | grep "RX packets" | awk '{print($6 $7)}')
+	let length=${#var}
+	let a=7
+	if [ "$length" -gt "$a" ]; then
+		tab=""
+	fi
+	a=3
+	if [ "$length" -lt "$a" ]; then
+		tab="\t\t\t"
+	fi
+
+	let lengthip=${#ip}
+	let a=1
+	if [ "$lengthip" -lt "$a" ]; then
+		tabip="\t\t\t"
+	fi
+	a=1
+	if [ "$lengthip" -gt "$a" ]; then
+		tabip="\t\t"
+	fi
+	echo -e "$counter\t\t$var\t\t\t$tab$mac\t$ip\t$tabip$speed"
+	counter=$((counter + 1))
+	tab="\t"
+done
+echo
